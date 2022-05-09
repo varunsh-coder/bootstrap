@@ -353,7 +353,7 @@ const scrollSpy = new bootstrap.ScrollSpy(document.body, {
 {{< callout warning >}}
 **Deprecated Options**
 
-Up until v5.1.3 we were using `offset` & `method` options, which are now deprecated and replaced by `rootMargin`.
+Up until v5.2.0-beta1 we were using `offset` & `method` options, which are now deprecated and replaced by `rootMargin`.
 To keep backwards compatibility, we will continue to parse a given `offset` to `rootMargin`, but this feature will be removed in **v6**.
 {{< /callout >}}
 
