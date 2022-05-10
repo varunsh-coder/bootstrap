@@ -20,21 +20,23 @@ const CLASS_VALIDATED = 'was-validated'
 const SELECTOR_DATA_TOGGLE = 'form[data-bs-toggle="form-validation"]'
 
 const Default = {
-  type: 'feedback' // or 'tooltip'
+  type: 'feedback', // or 'tooltip'
+  validateCallback: null
 }
 
 const DefaultType = {
-  type: 'string'
+  type: 'string', validateCallback: '(function|null)'
 }
 
 class Form extends BaseComponent {
   constructor(element, config) {
-    super(element, config)
-    if (this._element.tagName !== 'FORM') {
-      throw new TypeError(`Need to be initialized in form elements. "${this._element.tagName}" given`)
+    if (element.tagName !== 'FORM') {
+      throw new TypeError(`Need to be initialized in form elements. "${element.tagName}" given`)
     }
 
-    this._formFields = null // Our fields
+    super(element, config)
+
+    this._formFields = null // form field instances
   }
 
   static get NAME() {
@@ -71,38 +73,45 @@ class Form extends BaseComponent {
 
   validate() {
     this.clear()
+    let fetchedErrors = {}
+
     if (this._element.checkValidity()) {
-      return
-    }
-
-    // eslint-disable-next-line no-unused-vars
-    for (const [name, field] of this.getFields()) {
-      const message = this._getFieldMessage(field)
-      field.appendFeedback(message)
-    }
-
-    this._element.classList.add(CLASS_VALIDATED)
-  }
-
-  _getFieldMessage(field) {
-    const element = field.getElement()
-
-    if (element.checkValidity()) { // if field is valid, return first success message
-      return field.successMessages().getFirst()
-    }
-
-    if (field.errorMessages().has('default')) { // if field is invalid check and return for default message
-      return field.errorMessages().get('default')
-    }
-
-    for (const property in element.validity) { // else return the default browser validation message
-      if (element.validity[property]) {
-        field.errorMessages().set(property, element.validationMessage)
-        return field.errorMessages().get(property)
+      fetchedErrors = this._fetchErrors()
+      if (!fetchedErrors) {
+        return true
       }
     }
 
-    return ''
+    for (const [name, field] of this.getFields()) {
+      this._appendFieldMessage(field, fetchedErrors[name] || null)
+    }
+
+    this._element.classList.add(CLASS_VALIDATED)
+    return false
+  }
+
+  getDataForSubmission() {
+    return new FormData(this._element)
+  }
+
+  _appendFieldMessage(field, givenMessage) {
+    const element = field.getElement()
+
+    if (givenMessage) { // if field is invalid check and return for default message
+      field.appendError(givenMessage)
+      return
+    }
+
+    if (element.checkValidity()) { // if field is valid, return first success message
+      field.appendSuccess()
+      return
+    }
+
+    if (field.appendError()) { // if field is invalid check and return for default message
+      return
+    }
+
+    field.appendError(element.validationMessage)
   }
 
   _initializeFields() {
@@ -112,13 +121,16 @@ class Form extends BaseComponent {
       const name = element.name || element.id
 
       const field = Field.getOrCreateInstance(element, {
-        name,
-        type: this._config.type
+        name, type: this._config.type
       })
       fields.set(name, field)
     }
 
     return fields
+  }
+
+  _fetchErrors() {
+    return typeof this._config.validateCallback === 'function' ? this._config.validateCallback(this.getDataForSubmission()) : {}
   }
 }
 
@@ -131,7 +143,9 @@ EventHandler.on(document, EVENT_SUBMIT, SELECTOR_DATA_TOGGLE, event => {
     event.stopPropagation()
   }
 
-  instance.validate()
+  if (instance.validate()) {
+    target.submit()
+  }
 })
 
 EventHandler.on(document, EVENT_RESET, SELECTOR_DATA_TOGGLE, event => {
