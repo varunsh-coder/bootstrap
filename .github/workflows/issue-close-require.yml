@@ -4,13 +4,19 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   issue-close-require:
+    permissions:
+      issues: write  # for actions-cool/issues-helper to update issues
+      pull-requests: write  # for actions-cool/issues-helper to update PRs
     runs-on: ubuntu-latest
     if: github.repository == 'twbs/bootstrap'
     steps:
       - name: awaiting reply
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@65840f57fe2b3b9a796776577b6b19d2a16adc72 # v3.4.0
         with:
           actions: "close-issues"
           labels: "awaiting-reply"

@@ -11,16 +11,22 @@ env:
   FORCE_COLOR: 2
   NODE: 16
 
+permissions:
+  contents: read
+
 jobs:
   cspell:
+    permissions:
+      contents: read  # for streetsidesoftware/cspell-action to fetch files for commit
+      pull-requests: read  # for streetsidesoftware/cspell-action to fetch commits for PR
     runs-on: ubuntu-latest
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
 
       - name: Run cspell
-        uses: streetsidesoftware/cspell-action@v1
+        uses: streetsidesoftware/cspell-action@2036cf1974b01e0f4b175feec78c6f496020aa80 # v1.6.1
         with:
           config: ".cspell.json"
           files: "**/*.md"
